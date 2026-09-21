@@ -238,25 +238,37 @@ auto_update: true
 
 `webhook_auth: "none"` signifie qu'un webhook déclenchable **sans aucun credential** est actif.
 
+**⚠️ Deux précisions de portée, à ne pas confondre :**
+
+1. **`0.0.0.0` signifie « écoute sur toutes les interfaces de la machine », PAS « port ouvert sur Internet ».** La surface réelle est celle listée ci-dessus : LAN, tailnet, réseaux Docker. Aucune exposition Internet n'a été constatée — et elle n'est pas vérifiable depuis Home Assistant, les règles de pare-feu et de redirection de ports de la box étant hors périmètre (§6.2). Ne pas requalifier ce constat en « exposé sur Internet » sans preuve issue d'un scan externe.
+
+2. **Tant que `webhook_auth` vaut `none`, l'URL complète du webhook est un secret de plein droit** — elle vaut credential à elle seule. Elle ne doit apparaître dans aucun rapport, message, ticket ou export. Elle ne figure nulle part dans ce document ni dans les deux audits : elle n'a jamais été récupérée (`webhook_id_override` est vide, donc l'identifiant est auto-généré). **Ne pas aller la chercher pour la documenter.**
+
 **Élément contextuel.** Les logs enregistrent 2 tentatives de connexion échouées le 19/09 à 20:49 depuis une adresse IPv6 lien-local (donc un appareil **du LAN**, pas d'Internet), sur `/auth/login_flow/`, User-Agent Windows. Il s'agit très probablement d'une erreur de saisie domestique, **pas d'une attaque**. Mais cela illustre que des hôtes du LAN sollicitent l'interface d'authentification — alors que le port 9584, lui, n'en demande aucune.
 
 **⚠️ POURQUOI CE N'A PAS ÉTÉ EXÉCUTÉ AUTOMATIQUEMENT.** Le serveur MCP `ha_mcp_tools` **est le canal par lequel un assistant IA pilote cette instance Home Assistant**. Toute modification de son entrée de configuration déclenche un rechargement de l'intégration, ce qui coupe la connexion en cours. Pire : si la connexion distante transite par ce port ou par le webhook non authentifié, passer `bind_host` à `127.0.0.1` ou activer l'authentification **supprime définitivement l'accès distant**, et il faut alors une intervention locale sur la machine pour le rétablir.
 
-La topologie exacte de la connexion (directe sur 9584 ? via le proxy webhook Nabu Casa ? via Tailscale ?) **n'est pas déterminable depuis Home Assistant**. Une sauvegarde nommée `Nabu Casa - Webhook Proxy for HA MCP 3.0.1` (25/08) suggère un passage par le proxy webhook Nabu Casa, ce qui rendrait `webhook_auth: "none"` structurant pour l'accès actuel.
+**➡️ TOPOLOGIE CONFIRMÉE PAR LE PROPRIÉTAIRE (21/09).**
 
-**➡️ Question à poser au propriétaire avant d'agir :**
-> « Comment ton client MCP (Claude Desktop / Claude Code) se connecte-t-il à Home Assistant : en direct sur `192.168.1.74:9584`, via le proxy webhook Nabu Casa, ou via Tailscale ? »
+> Connexion **historiquement configurée via le webhook Nabu Casa** — ni en direct sur le port 9584, ni via Tailscale. Le chemin exact emprunté aujourd'hui par le connecteur ChatGPT reste **à confirmer dans les paramètres du connecteur**.
 
-**Procédure recommandée selon la réponse :**
+Cohérent avec la sauvegarde `Nabu Casa - Webhook Proxy for HA MCP 3.0.1` (25/08). **Conséquence directe : `webhook_auth: "none"` est structurant pour l'accès distant actuel. Le basculer sèchement coupe l'accès.**
 
-| Réponse | Action |
-|---|---|
-| Client sur la même machine que HA | `bind_host: "127.0.0.1"` — sans risque |
-| Accès via Tailscale | `bind_host: "100.101.146.79"` |
-| Accès via le proxy webhook Nabu Casa | **Ne pas toucher `bind_host` ni `webhook_auth` à distance.** Prévoir un accès local (écran + clavier, ou SSH depuis le LAN) avant toute modification |
-| Incertain | Prévoir l'accès local d'abord, puis modifier |
+**➡️ SÉQUENCE VALIDÉE — à suivre dans cet ordre, sans raccourci.**
 
-**Réglage cible :**
+La règle est de **construire le nouveau chemin avant de démonter l'ancien**, ce qui supprime toute fenêtre de coupure. Ne pas inverser :
+
+| Étape | Action | Critère de passage à l'étape suivante |
+|---|---|---|
+| 1 | **Ne rien modifier.** Conserver la configuration actuelle | — |
+| 2 | Confirmer le chemin réellement utilisé par le connecteur ChatGPT dans ses paramètres | Chemin identifié |
+| 3 | Configurer un **nouvel accès authentifié** en parallèle de l'existant | Nouvel accès créé, ancien toujours actif |
+| 4 | **Tester le nouvel accès par une requête de lecture** (ex. `ha_get_overview`) | Lecture réussie |
+| 5 | Basculer le connecteur sur le nouvel accès | Connecteur opérationnel sur le nouveau chemin |
+| 6 | Vérifier qu'un **accès local de secours** fonctionne (LAN ou console) | Accès de secours confirmé |
+| 7 | **Seulement alors** : désactiver ou renouveler l'ancien webhook, puis appliquer `bind_host` et `auto_update` | — |
+
+**Réglage cible — à n'appliquer qu'à l'étape 7 :**
 
 ```yaml
 bind_host: "127.0.0.1"     # ou l'adresse tailnet selon le cas
@@ -503,7 +515,8 @@ L'automatisation interroge cette entité **toutes les 30 secondes** : elle écho
 3. **Préférer les constructions natives aux templates Jinja** dans les positions `condition:` et `trigger:` — les templates échouent silencieusement à l'exécution. L'installation contient déjà beaucoup de templates en position de condition (dette connue, constat M5).
 4. **Ne jamais utiliser `device_id`** dans les automatisations — préférer `entity_id`.
 5. **Vérifier les références croisées avant tout renommage ou suppression** d'entité.
-6. **Ne jamais reproduire une valeur de secret** dans un rapport ou un message.
+6. **Ne jamais reproduire une valeur de secret** dans un rapport ou un message. Sont à traiter comme des secrets, au-delà des mots de passe et tokens : **l'URL complète du webhook MCP tant que `webhook_auth` vaut `none`** (elle vaut credential à elle seule), l'URL publique Nabu Casa de l'instance, l'`instance_id`, l'empreinte du certificat, et les URL d'ingress des add-ons. Aucun de ces éléments ne figure dans ce document ni dans les deux audits — vérifié par recherche. Ne pas les y ajouter.
+7. **Ne pas requalifier un constat au-delà de la preuve.** Exemple concret : `bind_host: 0.0.0.0` établit une exposition LAN/tailnet/Docker, pas une exposition Internet — laquelle n'est pas vérifiable depuis Home Assistant.
 
 ### 6.4 Points forts à préserver
 
@@ -568,14 +581,16 @@ Référence 21/09 : 1 547,84 MiB. Après exclusions, la croissance doit tomber s
 
 **À faire en priorité, dans cet ordre :**
 
-1. **CRITIQUE 1** — serveur MCP : poser d'abord la question de topologie au propriétaire (§4), prévoir un accès local, puis fermer
+1. **CRITIQUE 1** — serveur MCP : topologie **confirmée** (webhook Nabu Casa). Suivre la séquence validée en 7 étapes du §4 — **construire et tester le nouvel accès authentifié avant de démonter l'ancien**. Ne rien modifier tant que l'étape 4 (test de lecture réussi) n'est pas franchie
 2. **CRITIQUE 2** — MQTT : suivre l'ordre strict en 6 étapes, **le Shelly en premier**
 3. **CRITIQUE 3** — exclusions recorder via File editor ou SSH, après vérification des `state_class`
 4. Second agent de sauvegarde **avant le 12/10** (expiration Nabu Casa)
 
 **Estimation d'effort :** les trois chantiers critiques représentent environ 45 minutes de travail effectif, hors temps de vérification. Une fois traités, le score d'audit passerait raisonnablement de **55/100 à ~68/100**.
 
-**Ce qu'il ne faut surtout pas faire :** changer le mot de passe MQTT sans commencer par le Shelly · modifier le serveur MCP à distance sans filet de secours local · supprimer `sensor.shelly_reseau_rapide_mqtt` (une recommandation de suppression figurait dans l'audit du 12/09, elle est **caduque** — ce capteur est devenu central).
+**Ce qu'il ne faut surtout pas faire :** changer le mot de passe MQTT sans commencer par le Shelly · basculer `webhook_auth` avant qu'un nouvel accès authentifié ait été créé **et testé par une requête de lecture** · documenter ou transmettre l'URL du webhook · supprimer `sensor.shelly_reseau_rapide_mqtt` (une recommandation de suppression figurait dans l'audit du 12/09, elle est **caduque** — ce capteur est devenu central).
+
+**Note de traçabilité.** Aucune configuration ni aucun identifiant n'a été modifié lors de la vérification de topologie du 21/09. Les seules écritures effectuées sur l'installation à cette date sont les deux corrections documentées au §3.2 (décalage du déclencheur de l'orchestrateur, rétention de traces), précédées de la sauvegarde `cf525952`.
 
 ---
 
