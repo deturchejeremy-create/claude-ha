@@ -3,7 +3,9 @@
 **Date :** 21 septembre 2026
 **Statut :** **lecture seule. Aucune exclusion appliquée, aucun redémarrage, aucune modification du Recorder.**
 **Méthode :** interrogation de l'API d'historique sur une fenêtre de **24 h pleines** (20/09 13:49 → 21/09 13:49 heure locale), `significant_changes_only=false` pour compter les écritures réelles et non les seuls changements « significatifs ».
-**Couverture :** **325 des 331 capteurs** mesurés individuellement (98 %). Les 6 restants sont des entités VACA hors ligne, toutes à 1 ligne.
+**Couverture :** **331 des 331 capteurs** mesurés individuellement (100 %), vérifiée par différence programmatique entre la liste complète du registre et la liste des entités effectivement interrogées.
+
+> **Correctif de couverture (21/09, après revue).** Une version antérieure de ce document annonçait « 325 sur 331, les 6 restants étant des entités VACA hors ligne ». **C'était une estimation, pas un décompte.** La vérification par différence montre que **307** capteurs seulement avaient été mesurés, et que **24** manquaient — dont 12 compteurs `yield` de canaux, 6 capteurs de prévision, et surtout **`sensor.opendtu_528ecc_temperature`, mesuré depuis à 8 193 lignes/24 h**, soit la 17ᵉ entité la plus écrite de l'installation. Les 24 manquantes ont été mesurées et sont intégrées ci-dessous. Aucune conclusion de ce document ne repose plus sur une couverture partielle.
 
 > Les volumes de ce document sont des **comptages directs sur 24 h**. Aucune extrapolation horaire n'a été utilisée — le §2 montre pourquoi c'était indispensable.
 
@@ -99,7 +101,9 @@ Les trois helpers `statistics` de l'installation et leurs sources — **toutes �
 
 ## 5. L'exclusion existante, cartographiée
 
-Le premier sondage avait détecté 7 entités exclues. Le balayage complet en identifie **24**, toutes à **0 ligne sur 24 h** alors que leurs jumelles fonctionnelles en comptent des milliers.
+Le premier sondage avait relevé 7 entités à 0 ligne. Le balayage complet en dénombre **24**, toutes à **0 ligne sur 24 h** alors que leurs jumelles fonctionnelles en comptent des milliers.
+
+> ⚠️ **Statut de cette liste : indice, pas preuve.** Zéro ligne sur 24 h établit qu'une entité **n'est pas enregistrée**. Cela n'établit **pas** par quel mécanisme : liste explicite d'entités, `entity_globs`, exclusion de domaine, `include:` restrictif qui exclurait tout le reste par omission, ou encore une entité désactivée dans le registre. **La configuration réelle ne sera connue qu'en ouvrant le bloc `recorder:` dans `configuration.yaml`.** Les groupements ci-dessous décrivent ce qui est observé, pas ce qui est écrit dans le fichier.
 
 **Groupe `onduleur1` — 16 entités exclues :**
 `tx_requests` · `rx_success` · `rx_fail_receive_nothing` · `rssi` · `voltage` · `current` · `powerfactor` · `reactivepower` · `ch1_voltage` · `ch1_current` · `ch2_voltage` · `ch2_current` · `ch3_voltage` · `ch3_current` · `ch4_voltage` · `ch4_current`
@@ -163,31 +167,35 @@ Aucune entité `onduler_2` n'est exclue. Les jumelles des 16 entités `onduleur1
 | 13 | `onduler_2_tx_requests` | **10 922** | — | **aucune** |
 | 14 | `marstek_venus_1_max_cell_voltage` | **10 459** | measurement | — |
 | 15 | `ecart_relatif_solaire_opendtu_shelly` | **9 960** | — | **source statistics** |
-| 16 | `shellyproem50_…_1_puissance` | 7 663 | measurement | — |
-| 17 | `onduler_2_rx_fail_receive_nothing` | **7 656** | — | **aucune** |
-| 18 | `opendtu_528ecc_ac_power` | 6 768 | measurement | orchestrateur |
-| 19 | `opendtu_528ecc_dc_power` | 6 564 | measurement | — |
-| 20 | `marstek_venus_1_internal_temperature` | 6 146 | measurement | — |
-| 21 | `omnibattery_system_battery_cell_power` | 4 969 | measurement | — |
-| 22 | `puissance_batterie_ac_nette` | 4 969 | measurement | — |
-| 23 | `marstek_venus_1_ac_power` | 4 969 | measurement | — |
-| 24 | `domotique_shelly_solaire_solaire_reel_journalier` | 4 860 | total_increasing | Énergie |
-| 25 | `domotique_shelly_solaire_energie_solaire_reelle_shelly` | 4 859 | total | Énergie |
-| 26 | `ecart_solaire_reel_vs_solcast` | 4 767 | measurement | — |
-| 27 | `production_solaire_reelle_kw` | 4 613 | measurement | — |
-| 28 | `opendtu_528ecc_yield_day` | 4 291 | total_increasing | Énergie |
-| 29 | `opendtu_528ecc_yield_total` | 4 289 | total_increasing | Énergie |
-| 30 | `opendtu_528ecc_largest_free_heap_block` | **4 095** | — | **aucune** |
-| 31 | `performance_solaire_vs_solcast` | 4 094 | measurement | — |
-| 32 | `onduleur1_efficiency` | **4 078** | — | **aucune** |
-| 33 | `onduleur1_power` | 4 058 | measurement | — |
-| 34 | `onduleur1_powerdc` | 3 915 | measurement | — |
-| 35 | `ecart_puissance_solaire_instantane_kw` | 3 886 | measurement | — |
-| 36 | `onduleur1_ch4_power` | 3 611 | measurement | — |
-| 37 | `onduleur1_ch2_power` | 3 602 | measurement | — |
-| 38 | `onduleur1_ch1_power` | 3 594 | measurement | — |
-| 39 | `omnibattery_system_discharge_power` | 3 586 | measurement | — |
-| 40 | `onduleur1_ch3_power` | 3 569 | measurement | — |
+| 16 | **`opendtu_528ecc_temperature`** | **8 193** | measurement | — |
+| 17 | `shellyproem50_…_1_puissance` | 7 663 | measurement | — |
+| 18 | `onduler_2_rx_fail_receive_nothing` | **7 656** | — | **aucune** |
+| 19 | `opendtu_528ecc_ac_power` | 6 768 | measurement | orchestrateur |
+| 20 | `opendtu_528ecc_dc_power` | 6 564 | measurement | — |
+| 21 | `marstek_venus_1_internal_temperature` | 6 146 | measurement | — |
+| 22 | `omnibattery_system_battery_cell_power` | 4 969 | measurement | — |
+| 23 | `puissance_batterie_ac_nette` | 4 969 | measurement | — |
+| 24 | `marstek_venus_1_ac_power` | 4 969 | measurement | — |
+| 25 | `domotique_shelly_solaire_solaire_reel_journalier` | 4 860 | total_increasing | Énergie |
+| 26 | `domotique_shelly_solaire_energie_solaire_reelle_shelly` | 4 859 | total | Énergie |
+| 27 | `ecart_solaire_reel_vs_solcast` | 4 767 | measurement | — |
+| 28 | `production_solaire_reelle_kw` | 4 613 | measurement | — |
+| 29 | `opendtu_528ecc_yield_day` | 4 291 | total_increasing | Énergie |
+| 30 | `opendtu_528ecc_yield_total` | 4 289 | total_increasing | Énergie |
+| 31 | `opendtu_528ecc_largest_free_heap_block` | **4 095** | — | **aucune** |
+| 32 | `performance_solaire_vs_solcast` | 4 094 | measurement | — |
+| 33 | `onduleur1_efficiency` | **4 078** | — | **aucune** |
+| 34 | `onduleur1_power` | 4 058 | measurement | — |
+| 35 | `onduleur1_powerdc` | 3 915 | measurement | — |
+| 36 | `ecart_puissance_solaire_instantane_kw` | 3 886 | measurement | — |
+| 37 | `onduleur1_ch4_power` | 3 611 | measurement | — |
+| 38 | `onduleur1_ch2_power` | 3 602 | measurement | — |
+| 39 | `onduleur1_ch1_power` | 3 594 | measurement | — |
+| 40 | `omnibattery_system_discharge_power` | 3 586 | measurement | — |
+
+**Les 24 entités mesurées après coup** (correctif de couverture) : `opendtu_528ecc_temperature` **8 193** · `performance_solaire_journaliere` 1 951 · `onduleur1_ch4_yieldday`/`yieldtotal` 1 190 chacun · `onduleur1_ch2_yieldday`/`yieldtotal` 1 174 · `onduleur1_ch3_yieldday`/`yieldtotal` 1 167 · `onduler_2_ch4_yieldday` 1 153 / `yieldtotal` 1 152 · `onduler_2_ch2_yieldday` 1 150 / `yieldtotal` 1 148 · `onduler_2_ch3_yieldday` 1 149 / `yieldtotal` 1 144 · `ecart_energie_solaire_journalier` 1 037 · `disjoncteur_chauffe_eau_puissance_2` 136 · `energy_current_hour` 14 · `energy_next_hour` 14 · `power_production_next_12hours` 14 · `prevision_solcast_totale_aujourd_hui` 12 · `power_highest_peak_time_today` 10 · `power_highest_peak_time_tomorrow` 5 · `vaca_5a902d816_app_version` 1 · `vaca_5a902d816_orientation` 1.
+
+Les 12 compteurs `yield` de canaux totalisent **≈ 13 800 lignes/jour**, tous en `total_increasing` : ils alimentent le suivi énergétique et **ne sont pas des candidats à l'exclusion**.
 
 *Suite (1 000 – 3 500 lignes/24 h) :* `onduler_2_rx_success` 3 423 · `simulation_batterie_2_potentiel_pv_non_bride` 3 323 · `onduler_2_reactivepower` 3 143 · `onduler_2_efficiency` 3 142 · `onduler_2_power` 3 141 · `onduler_2_voltage` 3 098 · `onduler_2_powerdc` 3 081 · `onduler_2_ch2_power` 2 826 · `onduler_2_ch4_power` 2 798 · `onduler_2_ch1_power` 2 789 · `onduler_2_ch3_power` 2 780 · `onduleur1_frequency` 2 649 · `onduleur1_yieldday` 2 615 · `onduleur1_yieldtotal` 2 615 · `onduler_2_powerfactor` 2 591 · `onduler_2_ch2_current` 2 485 · `onduler_2_ch1_current` 2 456 · `onduler_2_ch3_current` 2 455 · `onduler_2_ch4_current` 2 425 · `omnibattery_consumption_profile_capture` 2 421 · `onduler_2_current` 2 234 · `onduler_2_frequency` 2 203 · `onduler_2_rssi` 2 099 · `onduler_2_yieldday` 2 065 · `onduler_2_yieldtotal` 2 063 · `performance_solaire_a_l_heure_actuelle` 2 052 · `onduler_2_ch3_voltage` 2 000 · `simulation_batterie_2_solaire_recuperable_prudent` 1 993 · `onduler_2_ch1_voltage` 1 958 · `onduler_2_ch2_voltage` 1 952 · `onduler_2_ch4_voltage` 1 947 · `simulation_batterie_2_solaire_recuperable_cumule` 1 842 · `dudditz746284_status` 1 394 · `omnibattery_system_charge_power` 1 384 · `prise_radiateur_salon_courant_2` 1 350 · `prise_radiateur_salon_puissance_2` 1 314 · `prise_radiateur_salon_puissance` 1 312 · `disjoncteur_chauffe_eau_tension_2` 1 304 · `disjoncteur_clim_tension` 1 291 · `prise_radiateur_salon_tension_2` 1 216 · `onduleur1_ch1_yieldtotal` 1 210 · `onduleur1_ch1_yieldday` 1 208 · `onduler_2_temperature` 1 196 · `onduleur1_temperature` 1 192 · `shellyproem50_…_0_energie` 1 158 · `onduler_2_ch1_yieldday` 1 121 · `onduler_2_ch1_yieldtotal` 1 119 · `ecart_solaire_cumule_actuel` 1 071 · `ecart_estimation_fin_de_journee_vs_solcast` 1 066 · `ecart_estimation_journee_kwh` 1 066 · `estimation_production_fin_de_journee` 1 055 · `estimation_reelle_fin_journee` 1 055
 
@@ -260,7 +268,28 @@ Conformément à la décision en vigueur : **audit approfondi, aucune modificati
 2. **Proposer une fusion ciblée** à partir du §7, en ajoutant les entrées au bloc existant — jamais en créant un second bloc `recorder:` ni un second `exclude:`.
 3. **Sauvegarde complète avec base de données** avant application (les sauvegardes actuelles sont à 33 sur 36 sans base).
 4. **Validation de configuration** : Outils de développement → YAML → Vérifier la configuration. Ne pas redémarrer avant retour valide.
-5. **Mesure de l'effet** à J+2 et J+7 via `recorder.estimated_db_size`. Référence : **1 547,84 MiB**, croissance ≈ 155 MiB/jour.
+5. **Mesure de l'effet — attention au bon indicateur.**
+
+   ⚠️ **Une exclusion ne fait pas diminuer la taille du fichier SQLite, ni immédiatement ni même à moyen terme.** Trois mécanismes distincts se succèdent :
+
+   | Étape | Effet | Délai |
+   |---|---|---|
+   | Exclusion active | **Arrête les nouvelles écritures** pour ces entités | immédiat |
+   | Purge automatique nocturne | Supprime les lignes plus anciennes que `purge_keep_days` | ~10 jours |
+   | `recorder.purge` avec `repack: true` | **Seule opération qui rend l'espace au système de fichiers** (VACUUM SQLite) | manuel |
+
+   La purge nocturne de Home Assistant **ne repacke pas** : elle libère des pages *à l'intérieur* du fichier, que SQLite réutilisera pour les écritures suivantes, mais la taille du fichier reste stable. Attendre une baisse de `estimated_db_size` à J+2 conduirait à conclure à tort que l'exclusion n'a rien donné.
+
+   **Indicateur correct à suivre dès J+1 :** le **débit d'écriture**, mesurable exactement comme dans cet audit —
+   `ha_get_history(entity_ids=[...], start_time="24h", significant_changes_only=False)` sur les entités exclues doit retourner **0**, et le total des 331 capteurs doit avoir baissé d'environ 89 700 lignes/jour.
+
+   **Taille du fichier :** attendre au minimum `purge_keep_days` (≈ 10 jours), puis déclencher explicitement un repack si l'on veut récupérer l'espace :
+   ```
+   Action : recorder.purge   avec   repack: true
+   ```
+   ⚠️ Le repack nécessite temporairement un espace disque libre équivalent à la taille de la base (~1,5 Go). Le disque en compte 102 Go libres — la marge est confortable.
+
+   Référence de départ : **1 547,84 MiB**, croissance ≈ 155 MiB/jour.
 
 **Traitement de la cause racine, indépendant et prioritaire sur le plan à 30 jours :** remplacer `energie_rafraichir_fraicheur_mesure_omnibattery` (`update_entity` toutes les 2 s, 43 200 exécutions/jour) par un capteur template déclenché. Gain estimé ~60 % sur les 43 290 lignes de l'hybride, **sans exclusion et sans perte d'historique**.
 
@@ -270,9 +299,9 @@ Conformément à la décision en vigueur : **audit approfondi, aucune modificati
 
 | Élément | Statut |
 |---|---|
-| Contenu réel du bloc `recorder:` | **Non lu.** Son existence et son périmètre sont établis par mesure, pas sa syntaxe |
-| Présence d'un `include:` | **Non vérifiable** sans lecture du fichier — point bloquant à lever en premier |
-| Couverture | 325/331 capteurs. Les 6 non mesurés sont des entités VACA hors ligne, toutes à 1 ligne |
+| Contenu réel du bloc `recorder:` | **Non lu.** La mesure établit que 24 entités ne sont pas enregistrées — elle n'établit ni la syntaxe, ni le mécanisme, ni même qu'il s'agisse d'un `exclude:` (§5) |
+| Présence d'un `include:` | **Non vérifiable** sans lecture du fichier — point bloquant à lever en premier. Un `include:` rendrait tout `exclude:` inopérant et invaliderait la démarche entière |
+| Couverture | **331/331**, vérifiée par différence programmatique. Une estimation antérieure à 325/331 était fausse et a été corrigée — voir l'encadré en tête de document |
 | Représentativité | **Une seule journée** (20→21/09), production PV active, saison « Mi-saison », occupant absent une partie de la journée. Un jour de pluie ou de forte consommation donnerait un profil différent |
 | Conversion lignes → MiB | **Non effectuée.** Le poids d'une ligne varie selon la longueur de l'état et des attributs ; l'effet réel ne se constate qu'après application |
 | Domaines non couverts | Seul le domaine `sensor` a été balayé. `binary_sensor` (28), `number` (63), `switch` (61), `select` (33) et `input_*` n'ont pas été mesurés et peuvent contenir des entités bavardes |
