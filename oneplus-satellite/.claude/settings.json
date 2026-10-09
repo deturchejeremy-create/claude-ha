@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(adb devices:*)",
+      "Bash(adb shell getprop:*)",
+      "Bash(adb shell dumpsys:*)",
+      "Bash(adb shell pm list:*)",
+      "Bash(adb shell pm path:*)",
+      "Bash(adb shell cmd appops get:*)",
+      "Bash(adb shell settings get:*)",
+      "Bash(adb shell screencap:*)",
+      "Bash(adb pull:*)",
+      "Bash(scrcpy:*)"
+    ],
+    "ask": [
+      "Bash(adb install:*)",
+      "Bash(adb shell pm grant:*)",
+      "Bash(adb shell cmd appops set:*)",
+      "Bash(adb shell am:*)",
+      "Bash(adb shell settings put:*)",
+      "Bash(adb shell input:*)",
+      "Bash(adb reboot:*)"
+    ],
+    "deny": [
+      "Bash(adb uninstall:*)",
+      "Bash(adb shell pm uninstall:*)",
+      "Bash(adb shell pm clear:*)",
+      "Bash(adb shell pm disable:*)",
+      "Bash(adb shell pm disable-user:*)",
+      "Bash(adb shell pm suspend:*)",
+      "Bash(adb shell cmd package uninstall:*)",
+      "Bash(adb shell recovery:*)",
+      "Bash(adb reboot bootloader:*)",
+      "Bash(adb reboot recovery:*)",
+      "Bash(fastboot:*)",
+      "Bash(*io.homeassistant.companion.android*)"
+    ]
+  }
+}
